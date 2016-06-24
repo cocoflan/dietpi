@@ -497,31 +497,34 @@
 			case "$OPTION" in
 			  1080p)
 				sed -i '/setenv m /c\setenv m "1080p"' /DietPi/boot.ini
+				sed -i '/setenv vout_mode /c\setenv vout_mode "hdmi"' /DietPi/boot.ini
 				REBOOT_REQUIRED=1
 				#Return to This Menu
 				TARGETMENUID=2
 				;;
 			  720p)
 				sed -i '/setenv m /c\setenv m "720p"' /DietPi/boot.ini
+				sed -i '/setenv vout_mode /c\setenv vout_mode "hdmi"' /DietPi/boot.ini
 				REBOOT_REQUIRED=1
 				#Return to This Menu
 				TARGETMENUID=2
 				;;
 			  480p)
 				sed -i '/setenv m /c\setenv m "480p"' /DietPi/boot.ini
+				sed -i '/setenv vout_mode /c\setenv vout_mode "hdmi"' /DietPi/boot.ini
 				REBOOT_REQUIRED=1
 				#Return to This Menu
 				TARGETMENUID=2
 				;;
 			  PC1)
 				sed -i '/setenv m /c\setenv m "1024x768"' /DietPi/boot.ini
+				sed -i '/setenv vout_mode /c\setenv vout_mode "hdmi"' /DietPi/boot.ini
 				REBOOT_REQUIRED=1
 				#Return to This Menu
 				TARGETMENUID=2
 				;;
 			  "VU7+")
 				sed -i '/setenv m /c\setenv m "1024x600"' /DietPi/boot.ini
-				# - DVI mode
 				sed -i '/setenv vout_mode /c\setenv vout_mode "dvi"' /DietPi/boot.ini
 
 				REBOOT_REQUIRED=1
@@ -553,25 +556,27 @@
 			case "$OPTION" in
 			  1080p)
 				sed -i '/setenv videoconfig /c\setenv videoconfig "drm_kms_helper.edid_firmware=edid/1920x1080.bin"' /DietPi/boot.ini
+				sed -i '/^setenv vout /c\setenv vout "hdmi"' /DietPi/boot.ini
 				REBOOT_REQUIRED=1
 				#Return to This Menu
 				TARGETMENUID=2
 				;;
 			  720p)
 				sed -i '/setenv videoconfig /c\setenv videoconfig "drm_kms_helper.edid_firmware=edid/1280x720.bin"' /DietPi/boot.ini
+				sed -i '/^setenv vout /c\setenv vout "hdmi"' /DietPi/boot.ini
 				REBOOT_REQUIRED=1
 				#Return to This Menu
 				TARGETMENUID=2
 				;;
 			  480p)
 				sed -i '/setenv videoconfig /c\setenv videoconfig "drm_kms_helper.edid_firmware=edid/720x480.bin"' /DietPi/boot.ini
+				sed -i '/^setenv vout /c\setenv vout "hdmi"' /DietPi/boot.ini
 				REBOOT_REQUIRED=1
 				#Return to This Menu
 				TARGETMENUID=2
 				;;
 			  "VU7+")
 				sed -i '/setenv videoconfig /c\setenv videoconfig "drm_kms_helper.edid_firmware=edid/1024x600.bin"' /DietPi/boot.ini
-				# - DVI mode
 				sed -i '/^setenv vout /c\setenv vout "dvi"' /DietPi/boot.ini
 
 				REBOOT_REQUIRED=1
@@ -733,7 +738,10 @@
 			bluetooth_state=0
 			bluetooth_state_text='Disabled'
 		fi
-		whiptail_menu_array+=("Bluetooth" ": $bluetooth_state_text")
+		# - No bluetooth for VM
+		if (( $HW_MODEL != 20 )); then
+			whiptail_menu_array+=("Bluetooth" ": $bluetooth_state_text")
+		fi
 
 		# - No serial console for VM
 		if (( $HW_MODEL != 20 )); then
@@ -1838,30 +1846,12 @@
 		unset whiptail_menu_array
 
 		#Apply new value
-		local pihole_target_adapter=''
 		# - Ethernet
 		if (( $1 == 0 )); then
 			ETH_DNS_STATIC=$return_value
-			pihole_target_adapter="eth$ETH_INDEX"
 		# - WiFi
 		elif (( $1 == 1 )); then
 			WIFI_DNS_STATIC=$return_value
-			pihole_target_adapter="wlan$WIFI_INDEX"
-		fi
-
-		#Apply to PiHole if installed and adapter matches.
-		if [ -f /etc/dnsmasq.conf ] &&
-			(( $(cat /etc/dnsmasq.conf | grep -ci -m1 "^interface=$pihole_target_adapter") )); then
-
-			# - remove exising dns entries
-			sed -i '/^server=/d' /etc/dnsmasq.conf
-
-			# - add them in
-			echo -e "server=$(echo -e $return_value | awk '{print $1}')" >> /etc/dnsmasq.conf
-			if [ -n "$(echo -e $return_value | awk '{print $2}')" ]; then
-				echo -e "server=$(echo -e $return_value | awk '{print $2}')" >> /etc/dnsmasq.conf
-			fi
-
 		fi
 
 	}
